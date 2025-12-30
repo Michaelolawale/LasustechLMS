@@ -135,7 +135,12 @@ function checkAuth() {
 function updateAuthUI() {
     const authButtons = document.getElementById("auth-buttons")
     const userMenu = document.getElementById("user-menu")
-    const navLinks = document.getElementById("nav-links")
+    const navLinks = document.getElementById("nav-links") // Desktop
+    const mobileLinks = document.getElementById("mobile-menu-links") // Mobile
+
+    // Define link HTML based on role
+    let linksHtml = ''
+    let mobileLinksHtml = ''
 
     if (state.currentUser) {
         authButtons.classList.add("hidden")
@@ -143,26 +148,48 @@ function updateAuthUI() {
         document.getElementById("user-name").textContent = state.currentUser.name
 
         if (state.currentUser.role === "librarian") {
-            navLinks.innerHTML = `
+            // Librarian Links
+            linksHtml = `
                 <a href="#home" class="nav-link text-gray-700 dark:text-gray-300 hover:text-academic-navy dark:hover:text-primary-500 font-medium transition">Home</a>
                 <a href="#catalog" class="nav-link text-gray-700 dark:text-gray-300 hover:text-academic-navy dark:hover:text-primary-500 font-medium transition">Catalog</a>
                 <a href="#librarian-dashboard" class="nav-link text-gray-700 dark:text-gray-300 hover:text-academic-navy dark:hover:text-primary-500 font-medium transition">Dashboard</a>
             `
+            mobileLinksHtml = `
+                <a href="#home" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-academic-navy dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700">Home</a>
+                <a href="#catalog" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-academic-navy dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700">Catalog</a>
+                <a href="#librarian-dashboard" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-academic-navy dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700">Dashboard</a>
+            `
         } else {
-            navLinks.innerHTML = `
+            // Member Links
+            linksHtml = `
                 <a href="#home" class="nav-link text-gray-700 dark:text-gray-300 hover:text-academic-navy dark:hover:text-primary-500 font-medium transition">Home</a>
                 <a href="#catalog" class="nav-link text-gray-700 dark:text-gray-300 hover:text-academic-navy dark:hover:text-primary-500 font-medium transition">Catalog</a>
                 <a href="#member-dashboard" class="nav-link text-gray-700 dark:text-gray-300 hover:text-academic-navy dark:hover:text-primary-500 font-medium transition">My Loans</a>
+            `
+            mobileLinksHtml = `
+                <a href="#home" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-academic-navy dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700">Home</a>
+                <a href="#catalog" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-academic-navy dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700">Catalog</a>
+                <a href="#member-dashboard" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-academic-navy dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700">My Loans</a>
             `
         }
     } else {
         authButtons.classList.remove("hidden")
         userMenu.classList.add("hidden")
-        navLinks.innerHTML = `
+
+        // Guest Links
+        linksHtml = `
             <a href="#home" class="nav-link text-gray-700 dark:text-gray-300 hover:text-academic-navy dark:hover:text-primary-500 font-medium transition">Home</a>
             <a href="#catalog" class="nav-link text-gray-700 dark:text-gray-300 hover:text-academic-navy dark:hover:text-primary-500 font-medium transition">Catalog</a>
         `
+        mobileLinksHtml = `
+            <a href="#home" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-academic-navy dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700">Home</a>
+            <a href="#catalog" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-academic-navy dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700">Catalog</a>
+        `
     }
+
+    // Inject HTML
+    if(navLinks) navLinks.innerHTML = linksHtml
+    if(mobileLinks) mobileLinks.innerHTML = mobileLinksHtml
 }
 
 // ==================== BOOK FUNCTIONS ====================
@@ -925,7 +952,22 @@ window.resetSystem = () => {
 // ==================== INITIALIZATION ====================
 
 function init() {
+    const mobileBtn = document.getElementById("mobile-menu-btn");
+    const mobileMenu = document.getElementById("mobile-menu");
 
+    if (mobileBtn && mobileMenu) {
+        // Toggle menu on button click
+        mobileBtn.addEventListener("click", () => {
+            mobileMenu.classList.toggle("hidden");
+        });
+
+        // Close menu when clicking a link inside it
+        mobileMenu.addEventListener("click", (e) => {
+            if (e.target.tagName === 'A') {
+                mobileMenu.classList.add("hidden");
+            }
+        });
+    }
     // Global Listeners (Nav, Theme)
     document.getElementById("logout-btn").addEventListener("click", logout)
     const themeToggle = document.getElementById("theme-toggle")
