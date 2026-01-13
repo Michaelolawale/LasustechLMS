@@ -710,21 +710,74 @@ function renderIssueReturnTab() {
 }
 
 function renderAllLoansTab() {
-    const activeLoans = state.loans.filter((l) => l.status === "active")
+    // 1. Get ALL loans (not just active)
+    // 2. Sort by ID or Date descending (newest first)
+    const allLoans = [...state.loans].sort((a, b) => b.id - a.id)
+
     return `
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-            <div class="p-6"><h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Active Loans (${activeLoans.length})</h2></div>
-            ${activeLoans.length === 0 ? `<div class="p-12 text-center"><p class="text-gray-500 dark:text-gray-400">No active loans</p></div>` : `
+            <div class="p-6 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Loan History (${allLoans.length})</h2>
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                    <span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span> Active
+                    <span class="inline-block w-2 h-2 bg-gray-400 rounded-full ml-3 mr-1"></span> Returned
+                    <span class="inline-block w-2 h-2 bg-red-500 rounded-full ml-3 mr-1"></span> Overdue
+                </div>
+            </div>
+            
+            ${allLoans.length === 0 ? `
+                <div class="p-12 text-center"><p class="text-gray-500 dark:text-gray-400">No loan history found</p></div>
+            ` : `
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50 dark:bg-gray-700">
-                            <tr><th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Book</th><th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Member</th><th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Issued</th><th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th></tr>
+                            <tr>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Book</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Member</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Issued</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Due / Returned</th>
+                            </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                            ${activeLoans.map((loan) => {
+                            ${allLoans.map((loan) => {
         const book = getBookById(loan.bookId)
         const member = state.members.find((m) => m.id === loan.memberId)
-        return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition"><td class="px-6 py-4"><div class="font-semibold text-gray-900 dark:text-white">${book.title}</div></td><td class="px-6 py-4"><div class="text-gray-900 dark:text-white">${member.name}</div></td><td class="px-6 py-4 text-gray-700 dark:text-gray-300">${formatDate(loan.issuedDate)}</td><td class="px-6 py-4"><span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-semibold rounded">Active</span></td></tr>`
+        const daysLeft = calculateDaysUntilDue(loan.dueDate)
+        const isOverdue = daysLeft < 0 && loan.status === "active"
+
+        // Handle cases where member or book might have been deleted (optional safety check)
+        if (!book || !member) return ''
+
+        return `
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                        <td class="px-6 py-4">
+                                            ${loan.status === 'returned'
+            ? `<span class="px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 text-xs font-semibold rounded">Returned</span>`
+            : isOverdue
+                ? `<span class="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs font-semibold rounded">Overdue</span>`
+                : `<span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-semibold rounded">Active</span>`
+        }
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="font-semibold text-gray-900 dark:text-white">${book.title}</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">${book.isbn}</div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-gray-900 dark:text-white">${member.name}</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">${member.email}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-gray-700 dark:text-gray-300 text-sm">
+                                            ${formatDate(loan.issuedDate)}
+                                        </td>
+                                        <td class="px-6 py-4 text-gray-700 dark:text-gray-300 text-sm">
+                                            ${loan.status === 'returned'
+            ? `<span class="text-gray-500">Ret: ${formatDate(loan.returnedDate)}</span>`
+            : `<span class="${isOverdue ? 'text-red-600 font-semibold' : ''}">Due: ${formatDate(loan.dueDate)}</span>`
+        }
+                                        </td>
+                                    </tr>
+                                `
     }).join("")}
                         </tbody>
                     </table>
